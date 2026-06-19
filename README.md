@@ -189,6 +189,33 @@ dfx canister call <CANISTER_ID> processIncomingDeposits --network ic
 
 See `scripts/deploy-mainnet.sh` and `scripts/verify-mainnet.sh` for helper flows.
 
+## Deploy frontend (Vercel)
+
+The Next.js app lives in **`frontend/`**, not the repo root. Vercel must use that folder or you will get **404 NOT_FOUND**.
+
+### Fix a failed Vercel deploy
+
+1. Open your project on [vercel.com](https://vercel.com) → **Settings** → **General**
+2. Find **Root Directory** → click **Edit**
+3. Set it to **`frontend`** → **Save**
+4. Go to **Deployments** → **⋯** on the latest deploy → **Redeploy**
+
+### First-time setup
+
+1. Import [WinCanister](https://github.com/prasangapokharel/WinCanister) from GitHub
+2. **Root Directory** = `frontend`
+3. **Framework** = Next.js (auto-detected after step 2)
+4. Add environment variables:
+
+| Variable | Value |
+|---|---|
+| `NEXT_PUBLIC_LOTTERY_CANISTER_ID` | `ulahq-iyaaa-aaaao-bbcoq-cai` |
+| `NEXT_PUBLIC_IC_HOST` | `https://icp0.io` |
+
+5. Click **Deploy**
+
+Production URL will look like `https://win-canister.vercel.app` (not the long preview URL).
+
 ## Configuration
 
 | Variable | Description |
