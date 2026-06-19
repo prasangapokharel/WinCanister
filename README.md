@@ -5,14 +5,18 @@
 WinCanister runs transparent daily rounds on-chain: users deposit ICP to a canister account ID, entries are credited automatically, and winners are drawn with ICP-native randomness when the timer ends. The protocol keeps **1% treasury** and pays **99%** to the top three winners (60% / 25% / 15%).
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Live](https://img.shields.io/badge/live-win--canister.vercel.app-22c55e)](https://win-canister.vercel.app/)
 
 ## Live
 
 | | |
 |---|---|
+| **Dashboard** | [win-canister.vercel.app](https://win-canister.vercel.app/) |
 | **Repository** | [github.com/prasangapokharel/WinCanister](https://github.com/prasangapokharel/WinCanister) |
 | **Canister** | `ulahq-iyaaa-aaaao-bbcoq-cai` |
 | **Network** | IC Mainnet |
+
+![WinCanister dashboard](docs/preview/image.png)
 
 ## Features
 
