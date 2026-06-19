@@ -1,0 +1,210 @@
+For a scalable Motoko backend, don't build everything in one file. Structure it like a production trading or financial system.
+
+**Full guides (reusable for any ICP project):**
+
+- [motok/README.md](./motok/README.md) — documentation index
+- [motok/code-guide.md](./motok/code-guide.md) — architecture, layers, feature workflow, migrations, tests
+- [motok/deploy-guide.md](./motok/deploy-guide.md) — build, local, mainnet, upgrade, troubleshooting
+
+---
+
+```text
+src/
+
+├── main.mo                     # Canister entrypoint
+
+├── api/
+│   └── v1/
+│       ├── LotteryController.mo
+│       ├── RoundController.mo
+│       ├── WinnerController.mo
+│       └── HealthController.mo
+
+├── services/
+│   ├── LotteryService.mo
+│   ├── RoundService.mo
+│   ├── WinnerService.mo
+│   ├── PaymentService.mo
+│   ├── RandomService.mo
+│   └── TreasuryService.mo
+
+├── repositories/
+│   ├── RoundRepository.mo
+│   ├── EntryRepository.mo
+│   ├── WinnerRepository.mo
+│   └── TreasuryRepository.mo
+
+├── models/
+│   ├── Round.mo
+│   ├── Entry.mo
+│   ├── Winner.mo
+│   ├── Treasury.mo
+│   └── Response.mo
+
+├── dto/
+│   ├── JoinRoundRequest.mo
+│   ├── RoundResponse.mo
+│   ├── WinnerResponse.mo
+│   └── ErrorResponse.mo
+
+├── ledger/
+│   ├── LedgerClient.mo
+│   ├── Transfer.mo
+│   └── Account.mo
+
+├── randomness/
+│   └── RawRandom.mo
+
+├── validators/
+│   ├── EntryValidator.mo
+│   ├── RoundValidator.mo
+│   └── PaymentValidator.mo
+
+├── middleware/
+│   ├── AuthMiddleware.mo
+│   ├── RateLimitMiddleware.mo
+│   ├── GuardMiddleware.mo
+│   └── ValidationMiddleware.mo
+
+├── storage/
+│   ├── StableRoundStore.mo
+│   ├── StableEntryStore.mo
+│   ├── StableWinnerStore.mo
+│   └── StableTreasuryStore.mo
+
+├── utils/
+│   ├── Time.mo
+│   ├── Result.mo
+│   ├── Constants.mo
+│   ├── Logger.mo
+│   └── Helpers.mo
+
+├── types/
+│   ├── Common.mo
+│   ├── Lottery.mo
+│   └── Ledger.mo
+
+├── config/
+│   ├── AppConfig.mo
+│   └── CanisterConfig.mo
+
+└── tests/
+    ├── LotteryServiceTest.mo
+    ├── RoundServiceTest.mo
+    ├── WinnerServiceTest.mo
+    └── PaymentServiceTest.mo
+```
+
+### API Layer
+
+Keep controllers thin:
+
+```text
+api/v1/
+```
+
+Example:
+
+```motoko
+public shared(msg) func joinRound() : async Result.Result<Text, Text> {
+    await LotteryController.joinRound(msg.caller)
+}
+```
+
+### Service Layer
+
+All business logic:
+
+```text
+LotteryService
+ ├─ Verify entry
+ ├─ Verify payment
+ ├─ Verify round open
+ ├─ Register participant
+ └─ Return result
+```
+
+Controllers should never contain business logic.
+
+### Repository Layer
+
+Only data access:
+
+```text
+RoundRepository
+EntryRepository
+WinnerRepository
+```
+
+Never access storage directly from services.
+
+### Storage Layer
+
+All stable memory:
+
+```text
+StableRoundStore
+StableEntryStore
+StableWinnerStore
+```
+
+If ICP upgrades the canister:
+
+```text
+upgrade
+↓
+stable memory survives
+↓
+all rounds remain
+```
+
+### Versioning
+
+Start immediately with:
+
+```text
+api/v1/
+```
+
+Later:
+
+```text
+api/v2/
+```
+
+without breaking old clients.
+
+### Main Canister
+
+`main.mo` should only wire everything together:
+
+```motoko
+public shared(msg) func joinRound() : async Result {
+    await LotteryController.joinRound(msg.caller)
+}
+
+public query func getCurrentRound() : async Round {
+    await RoundController.getCurrentRound()
+}
+```
+
+No business logic in `main.mo`.
+
+### Rules
+
+```text
+✓ Controllers = request handling
+✓ Services = business logic
+✓ Repositories = data access
+✓ Storage = stable memory only
+✓ DTOs = API contracts
+✓ Models = domain entities
+✓ Validators = all validation
+✓ Utils = reusable helpers
+✓ API versioned from day 1
+✓ No circular imports
+✓ One responsibility per file
+✓ Keep main.mo under ~200 lines
+```
+
+This structure scales cleanly from a few hundred users to a large ICP application without turning into a monolithic canister codebase.

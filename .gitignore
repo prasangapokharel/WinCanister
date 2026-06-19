@@ -1,0 +1,27 @@
+.dfx/
+.mops/
+*.wasm
+
+# env
+.env
+.env.local
+frontend/.env.local
+
+# dependencies
+node_modules/
+frontend/node_modules/
+
+# next.js
+frontend/.next/
+frontend/out/
+
+# build / dist
+dist/
+
+# editor / tooling
+.cursor/
+.claude/
+AGENT.md
+
+# os
+.DS_Store

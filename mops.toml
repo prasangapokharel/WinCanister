@@ -1,0 +1,29 @@
+[package]
+name = "wincanister"
+version = "1.0.0"
+description = "WinCanister — decentralized 24h ICP lottery on the Internet Computer"
+authors = ["Prasanga Rman Pokharel"]
+license = "Apache-2.0"
+
+[toolchain]
+moc = "1.7.0"
+
+[dependencies]
+core = "2.5.0"
+test = "2.1.1"
+
+[moc]
+args = ["--default-persistent-actors"]
+
+[build]
+outputDir = ".mops/.build"
+
+[canisters.lottery]
+main = "src/main.mo"
+args = [
+  "--actor-alias", "icrc1_ledger", "ryjl3-tyaaa-aaaaa-aaaba-cai",
+  "--actor-alias", "icp_index", "qhbym-qaaaa-aaaaa-aaafq-cai",
+]
+
+[canisters.lottery.migrations]
+chain = "src/migrations"

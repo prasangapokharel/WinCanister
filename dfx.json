@@ -1,0 +1,43 @@
+{
+  "canisters": {
+    "lottery": {
+      "main": "src/main.mo",
+      "type": "motoko",
+      "dependencies": ["icrc1_ledger"],
+      "remote": {
+        "id": {
+          "ic": "ulahq-iyaaa-aaaao-bbcoq-cai"
+        }
+      },
+      "metadata": [
+        {
+          "name": "candid:service"
+        }
+      ]
+    },
+    "icrc1_ledger": {
+      "type": "custom",
+      "candid": "https://raw.githubusercontent.com/dfinity/ic/d87954601e4b22972899e9957e800406a0a6b929/rs/rosetta-api/icrc1/ledger/ledger.did",
+      "wasm": "https://download.dfinity.systems/ic/d87954601e4b22972899e9957e800406a0a6b929/canisters/ic-icrc1-ledger.wasm.gz",
+      "remote": {
+        "id": {
+          "ic": "ryjl3-tyaaa-aaaaa-aaaba-cai"
+        }
+      }
+    }
+  },
+  "networks": {
+    "ic": {
+      "providers": ["https://icp0.io"],
+      "type": "persistent"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "--default-persistent-actors",
+      "packtool": "./scripts/packtool.sh"
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
