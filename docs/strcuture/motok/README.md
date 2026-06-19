@@ -6,12 +6,35 @@ These docs describe **how to build any canister** in this style — not a single
 
 ---
 
-## Documents
+## Documentation index
 
-| Guide | Purpose |
-|-------|---------|
-| [code-guide.md](./code-guide.md) | Folder layout, layer rules, request flow, how to add features, migrations, tests |
-| [deploy-guide.md](./deploy-guide.md) | Build, local deploy, mainnet install, upgrade, verification, troubleshooting |
+### Code guide — how to write backend
+
+| Doc | Topic |
+|-----|-------|
+| [code-guide/README.md](./code-guide/README.md) | Index & reading order |
+| [architecture.md](./code-guide/architecture.md) | Folder layout, layers, request flow |
+| [feature-workflow.md](./code-guide/feature-workflow.md) | Add a feature step-by-step |
+| [main-and-migrations.md](./code-guide/main-and-migrations.md) | `main.mo`, timers, migrations |
+| [testing.md](./code-guide/testing.md) | Tests, harness, scenarios |
+| [conventions.md](./code-guide/conventions.md) | Naming, errors, security, versioning |
+| [external-canisters.md](./code-guide/external-canisters.md) | Ledger, index, mocks |
+| [checklist.md](./code-guide/checklist.md) | Review, bootstrap, mistakes |
+
+### Deploy guide — how to ship
+
+| Doc | Topic |
+|-----|-------|
+| [deploy-guide/README.md](./deploy-guide/README.md) | Index & quick commands |
+| [prerequisites.md](./deploy-guide/prerequisites.md) | Tools, identity, build rule |
+| [build.md](./deploy-guide/build.md) | `build-lottery.sh`, wasm output |
+| [local-deploy.md](./deploy-guide/local-deploy.md) | Local replica |
+| [mainnet-fresh.md](./deploy-guide/mainnet-fresh.md) | First IC install |
+| [mainnet-upgrade.md](./deploy-guide/mainnet-upgrade.md) | Upgrade + memory persistence |
+| [frontend-connection.md](./deploy-guide/frontend-connection.md) | Env, agent v3, Vercel |
+| [scripts-reference.md](./deploy-guide/scripts-reference.md) | All scripts |
+| [troubleshooting.md](./deploy-guide/troubleshooting.md) | Errors & fixes |
+| [release-checklist.md](./deploy-guide/release-checklist.md) | Pre-ship checklist |
 
 ---
 
@@ -21,19 +44,19 @@ These docs describe **how to build any canister** in this style — not a single
 Client / Frontend
        │
        ▼
-  main.mo  ──────────── thin actor entrypoint (public API only)
+  main.mo  ──────────── thin actor entrypoint
        │
        ▼
-  api/v1/*Controller  ─ request handling, caller forwarding
+  api/v1/*Controller  ─ request handling
        │
        ▼
-  services/*          ─ business rules, workflows, orchestration
+  services/*          ─ business rules
        │
        ▼
-  repositories/*      ─ data access abstraction
+  repositories/*      ─ data access
        │
        ▼
-  storage/*           ─ stable memory implementation
+  storage/*           ─ stable memory
 ```
 
 **Golden rule:** Data flows down. Dependencies never flow up.
@@ -47,26 +70,32 @@ Client / Frontend
 | Motoko (`moc`) | 1.7.0 via mops |
 | `mo:core` | 2.5.0 |
 | `mo:test` | 2.1.1 |
-| Persistence | Enhanced orthogonal persistence + migration chain |
-| Build | `bash scripts/build-lottery.sh` (moc directly — not `dfx build` for production wasm) |
-| Tests | `bash scripts/run-tests.sh` → `backend/testing/**/*.test.mo` |
+| Build | `DFX_NETWORK=ic bash scripts/build-lottery.sh` |
+| Tests | `bash scripts/run-tests.sh` (local `backend/testing/`) |
+| Mainnet canister | `ulahq-iyaaa-aaaao-bbcoq-cai` |
+| Live dashboard | https://win-canister.vercel.app |
 
 ---
 
 ## When to read which guide
 
-- **Starting a new canister or feature** → [code-guide.md](./code-guide.md)
-- **First deploy or upgrade to IC mainnet** → [deploy-guide.md](./deploy-guide.md)
-- **Folder naming only** → [../readme](../readme) (short structure reference)
+| Goal | Start here |
+|------|------------|
+| New feature | [code-guide/feature-workflow.md](./code-guide/feature-workflow.md) |
+| Migration / upgrade issue | [code-guide/main-and-migrations.md](./code-guide/main-and-migrations.md) |
+| First mainnet deploy | [deploy-guide/mainnet-fresh.md](./deploy-guide/mainnet-fresh.md) |
+| Upgrade existing canister | [deploy-guide/mainnet-upgrade.md](./deploy-guide/mainnet-upgrade.md) |
+| Vercel / frontend 404 | [deploy-guide/troubleshooting.md](./deploy-guide/troubleshooting.md) |
+| Short folder tree | [../readme](../readme) |
 
 ---
 
-## Checklist before every release
+## Pre-release checklist
 
-- [ ] All services have tests under `backend/testing/<name>/`
-- [ ] `bash scripts/run-tests.sh` passes
-- [ ] `bash scripts/build-lottery.sh` produces wasm
-- [ ] New persistent fields have a migration file in `src/migrations/`
+- [ ] `bash scripts/run-tests.sh` passes (local)
+- [ ] `DFX_NETWORK=ic bash scripts/build-lottery.sh` succeeds
+- [ ] Migration added for new persistent fields
 - [ ] No business logic in `main.mo` or controllers
-- [ ] No direct stable memory access outside `storage/`
-- [ ] Public API changes are versioned under `api/v1/` (or new `v2/`)
+- [ ] No direct stable memory outside `storage/`
+- [ ] API changes versioned under `api/v1/`
+- [ ] Frontend IDL synced if API changed

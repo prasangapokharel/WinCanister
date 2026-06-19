@@ -241,10 +241,19 @@ WinCanister/
 │   ├── migrations/      # Upgrade migrations
 │   └── main.mo          # Canister entrypoint
 ├── frontend/            # Next.js dashboard
+├── docs/strcuture/motok/  # Motoko code + deploy guides
 ├── scripts/             # Build & deploy helpers
 ├── dfx.json
 └── mops.toml
 ```
+
+### Backend developer docs
+
+| Guide | Path |
+|-------|------|
+| Index | [docs/strcuture/motok/README.md](docs/strcuture/motok/README.md) |
+| Code (architecture, features, migrations, tests) | [docs/strcuture/motok/code-guide/](docs/strcuture/motok/code-guide/) |
+| Deploy (build, mainnet, upgrade, Vercel) | [docs/strcuture/motok/deploy-guide/](docs/strcuture/motok/deploy-guide/) |
 
 ## Contributing
 
