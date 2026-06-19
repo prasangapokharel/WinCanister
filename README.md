@@ -10,7 +10,7 @@ WinCanister runs transparent daily rounds on-chain: users deposit ICP to a canis
 
 | | |
 |---|---|
-| **Dashboard** | [WinCanister frontend](https://github.com/prasangapokharel/WinCanister) *(deploy your own or use hosted URL)* |
+| **Repository** | [github.com/prasangapokharel/WinCanister](https://github.com/prasangapokharel/WinCanister) |
 | **Canister** | `ulahq-iyaaa-aaaao-bbcoq-cai` |
 | **Network** | IC Mainnet |
 
@@ -24,17 +24,115 @@ WinCanister runs transparent daily rounds on-chain: users deposit ICP to a canis
 
 ## Architecture
 
-```
-Controllers → Services → Repositories → Storage
+### System overview
+
+```mermaid
+flowchart TB
+  subgraph Users
+    W[ICP Wallet]
+  end
+
+  subgraph Frontend["Next.js Dashboard"]
+    UI[WinCanister UI]
+    Agent[IC Agent / Candid]
+  end
+
+  subgraph Canister["WinCanister Motoko Canister"]
+    API[api/v1 Controllers]
+    SVC[services]
+    REPO[repositories]
+    STORE[(stable storage)]
+    API --> SVC --> REPO --> STORE
+  end
+
+  subgraph IC["Internet Computer"]
+    IDX[ICP Index]
+    LED[ICP Ledger]
+    RND[raw_rand]
+  end
+
+  W -->|ICP transfer to account ID| LED
+  UI --> Agent -->|query / update calls| API
+  SVC -->|poll incoming transfers| IDX
+  SVC -->|treasury & prize payouts| LED
+  SVC -->|winner selection| RND
+  LED -->|deposit detected| IDX
 ```
 
-| Layer | Responsibility |
+### Canister layers
+
+```mermaid
+flowchart LR
+  subgraph Presentation
+    C1[LotteryController]
+    C2[RoundController]
+    C3[WinnerController]
+    C4[HealthController]
+  end
+
+  subgraph Business
+    LS[LotteryService]
+    RS[RoundService]
+    ES[EntryService]
+    DS[DepositService]
+    WS[WinnerService]
+    PS[PrizeService]
+    TS[TreasuryService]
+  end
+
+  subgraph Data
+    RR[RoundRepository]
+    ER[EntryRepository]
+    AR[AddressEntryRepository]
+    WR[WinnerRepository]
+    PR[PayoutRepository]
+  end
+
+  subgraph Persistence
+    SM[StableStorage + migrations]
+  end
+
+  C1 & C2 & C3 & C4 --> LS & RS & ES & DS & WS
+  LS & RS & ES & DS & WS --> PS & TS
+  PS & TS --> RR & ER & AR & WR & PR --> SM
+```
+
+| Layer | Path | Responsibility |
+|---|---|---|
+| Controllers | `src/api/v1/` | Thin Candid endpoints — validate input, call services, map responses |
+| Services | `src/services/` | Business rules: rounds, entries, deposits, draws, treasury, payouts |
+| Repositories | `src/repositories/` | Read/write domain data — no business logic |
+| Storage | `src/storage/` | Stable memory maps and upgrade-safe persistence |
+| Ledger | `src/ledger/` | ICP ledger transfers and index polling |
+| Frontend | `frontend/` | Next.js dashboard — pool stats, countdown, deposit QR, live feed |
+
+### Deposit flow
+
+```mermaid
+sequenceDiagram
+  participant User as User Wallet
+  participant Ledger as ICP Ledger
+  participant Index as ICP Index
+  participant Canister as WinCanister
+  participant UI as Dashboard
+
+  User->>Ledger: Send ≥ 1 ICP to canister account ID
+  Note over Canister: Timer / manual sync every 30s
+  Canister->>Index: Fetch incoming transfers
+  Index-->>Canister: New transfer list
+  Canister->>Canister: Credit AddressEntry, update pool
+  UI->>Canister: Poll round state
+  Canister-->>UI: Participants, pool, countdown
+```
+
+### Prize split
+
+| Place | Share |
 |---|---|
-| `src/api/v1/` | Thin HTTP/Candid endpoints |
-| `src/services/` | Business logic (entries, draws, deposits, payouts) |
-| `src/repositories/` | Data access |
-| `src/storage/` | Stable memory |
-| `frontend/` | Next.js dashboard |
+| Winner 1 | 60% of prize pool |
+| Winner 2 | 25% of prize pool |
+| Winner 3 | 15% of prize pool |
+| Protocol treasury | 1% of total pool |
 
 ## Prerequisites
 
@@ -50,7 +148,6 @@ Controllers → Services → Repositories → Storage
 git clone git@github.com:prasangapokharel/WinCanister.git
 cd WinCanister
 
-# Frontend
 cd frontend && npm ci && cp .env.example .env.local && cd ..
 ```
 
@@ -100,30 +197,33 @@ See `scripts/deploy-mainnet.sh` and `scripts/verify-mainnet.sh` for helper flows
 | `NEXT_PUBLIC_DFX_NETWORK` | Set to `local` for local replica |
 | `NEXT_PUBLIC_IC_HOST` | IC HTTP endpoint (default `https://icp0.io`) |
 
+## Project structure
+
+```
+WinCanister/
+├── src/
+│   ├── api/v1/          # Candid controllers
+│   ├── services/        # Business logic
+│   ├── repositories/    # Data access
+│   ├── storage/         # Stable memory
+│   ├── ledger/          # ICP ledger + index clients
+│   ├── migrations/      # Upgrade migrations
+│   └── main.mo          # Canister entrypoint
+├── frontend/            # Next.js dashboard
+├── scripts/             # Build & deploy helpers
+├── dfx.json
+└── mops.toml
+```
+
 ## Contributing
 
 Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request.
 
 1. Fork the repo
 2. Create a feature branch (`git checkout -b feat/my-change`)
-3. Run tests and frontend checks
+3. Run frontend checks (`npm run typecheck`, `npm run lint`, `npm run build`)
 4. Open a PR with a clear description
-
-## Project structure
-
-```
-WinCanister/
-├── src/                 # Motoko canister source
-├── frontend/            # Next.js dashboard
-├── scripts/             # Build, test, deploy helpers
-├── dfx.json
-└── mops.toml
-```
 
 ## License
 
 Apache-2.0 — see [LICENSE](LICENSE).
-
-## Author
-
-Built by [Prasanga Rman Pokharel](https://github.com/prasangapokharel)
