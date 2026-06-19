@@ -8,9 +8,7 @@ export const LOTTERY_CANISTER_ID =
   "ulahq-iyaaa-aaaao-bbcoq-cai"
 
 export const NETWORK_LABEL =
-  process.env.NEXT_PUBLIC_DFX_NETWORK === "local"
-    ? "LOCAL"
-    : "IC MAINNET"
+  process.env.NEXT_PUBLIC_DFX_NETWORK === "local" ? "local" : "mainnet"
 
 export const IS_LOCAL =
   process.env.NEXT_PUBLIC_DFX_NETWORK === "local"

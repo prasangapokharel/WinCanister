@@ -18,6 +18,9 @@ frontend/out/
 # build / dist
 dist/
 
+# backend tests (local only)
+backend/
+
 # editor / tooling
 .cursor/
 .claude/

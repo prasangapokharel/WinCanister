@@ -11,14 +11,6 @@ Thank you for helping improve WinCanister! This project is open source and commu
 
 ## Development checks
 
-### Backend (Motoko)
-
-```bash
-bash scripts/run-tests.sh
-```
-
-All tests under `backend/testing/` must pass.
-
 ### Frontend (Next.js)
 
 ```bash
@@ -27,6 +19,14 @@ npm ci
 npm run typecheck
 npm run lint
 npm run build
+```
+
+### Motoko canister
+
+If you change `src/`, build locally before submitting:
+
+```bash
+DFX_NETWORK=ic bash scripts/build-lottery.sh
 ```
 
 ## Code standards
@@ -40,7 +40,6 @@ Follow the layered architecture in the repo:
 - Repositories own persistence
 - Use `Result` types for expected errors; never trap for user-facing failures
 - Winner selection must use ICP `raw_rand()` — no predictable seeds
-- New tests go in `backend/testing/<feature>/`
 
 ### Frontend
 

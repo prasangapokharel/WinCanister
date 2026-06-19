@@ -1,11 +1,6 @@
-import { HugeiconsIcon } from "@hugeicons/react"
-import {
-  Blockchain01Icon,
-  Clock01Icon,
-} from "@hugeicons/core-free-icons"
-
 import { Badge } from "@/components/ui/badge"
 import { BrandAvatar } from "@/components/home/BrandAvatar"
+import { ThemeToggle } from "@/components/home/ThemeToggle"
 import { NETWORK_LABEL } from "@/lib/lottery/config"
 import { SITE } from "@/lib/site"
 import type { PublicCurrentRound } from "@/lib/lottery/types"
@@ -13,6 +8,8 @@ import type { PublicCurrentRound } from "@/lib/lottery/types"
 interface DashboardHeaderProps {
   round: PublicCurrentRound | null
 }
+
+const badgeClass = "rounded-full px-3 py-1 font-normal"
 
 export function DashboardHeader({ round }: DashboardHeaderProps) {
   const isOpen = round?.status === "OPEN"
@@ -35,27 +32,19 @@ export function DashboardHeader({ round }: DashboardHeaderProps) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
-        <Badge variant="outline" className="gap-1.5 rounded-full px-3 py-1 font-normal">
-          <HugeiconsIcon icon={Clock01Icon} strokeWidth={2} className="size-3.5" />
+      <div className="flex flex-wrap items-end gap-2 sm:justify-end">
+        <Badge variant="outline" className={badgeClass}>
           Round #{roundId}
         </Badge>
-        <Badge
-          className={`rounded-full px-3 py-1 font-normal ${
-            isOpen
-              ? "border-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-              : "border-border bg-muted/50 text-muted-foreground"
-          }`}
-        >
+        <Badge variant="outline" className={badgeClass}>
           {isOpen ? "online" : "offline"}
         </Badge>
-        <Badge
-          variant="outline"
-          className="gap-1.5 rounded-full border-sky-500/30 bg-sky-500/10 px-3 py-1 font-normal text-sky-700 dark:text-sky-400"
-        >
-          <HugeiconsIcon icon={Blockchain01Icon} strokeWidth={2} className="size-3.5" />
-          {NETWORK_LABEL}
-        </Badge>
+        <div className="flex flex-col items-center gap-1">
+          <ThemeToggle />
+          <Badge variant="outline" className={badgeClass}>
+            {NETWORK_LABEL}
+          </Badge>
+        </div>
       </div>
     </header>
   )

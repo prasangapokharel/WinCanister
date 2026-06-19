@@ -54,19 +54,13 @@ cd WinCanister
 cd frontend && npm ci && cp .env.example .env.local && cd ..
 ```
 
-### 2. Run backend tests
-
-```bash
-bash scripts/run-tests.sh
-```
-
-### 3. Build canister wasm
+### 2. Build canister wasm
 
 ```bash
 DFX_NETWORK=ic bash scripts/build-lottery.sh
 ```
 
-### 4. Run frontend locally
+### 3. Run frontend locally
 
 ```bash
 cd frontend
@@ -120,7 +114,6 @@ Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) before
 ```
 WinCanister/
 ├── src/                 # Motoko canister source
-├── backend/testing/     # Motoko unit tests
 ├── frontend/            # Next.js dashboard
 ├── scripts/             # Build, test, deploy helpers
 ├── dfx.json
