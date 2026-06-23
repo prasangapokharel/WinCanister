@@ -59,6 +59,12 @@ export const idlFactory = ({ IDL }: { IDL: any }) => {
     winner3: IDL.Opt(IDL.Principal),
   })
 
+  const RecentEntryResponse = IDL.Record({
+    accountHex: IDL.Text,
+    amountE8s: IDL.Nat,
+    timestampNanos: IDL.Int,
+  })
+
   const HealthResponse = IDL.Record({
     status: IDL.Text,
     version: IDL.Text,
@@ -87,6 +93,7 @@ export const idlFactory = ({ IDL }: { IDL: any }) => {
     getPayouts: IDL.Func([IDL.Nat], [IDL.Opt(PayoutDetailsResponse)], ["query"]),
     getRoundHistory: IDL.Func([], [IDL.Vec(IDL.Nat)], ["query"]),
     getRoundResult: IDL.Func([IDL.Nat], [IDL.Opt(RoundResultResponse)], ["query"]),
+    getRecentEntries: IDL.Func([], [IDL.Vec(RecentEntryResponse)], ["query"]),
     getWinnerHistory: IDL.Func([], [IDL.Vec(WinnerHistoryEntry)], ["query"]),
     getWinnersByRound: IDL.Func([IDL.Nat], [IDL.Vec(WinnerResponse)], ["query"]),
     getTreasuryTotalTransferred: IDL.Func([], [IDL.Nat], ["query"]),

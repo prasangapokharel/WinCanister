@@ -41,15 +41,21 @@ module {
       amount : Nat,
       roundId : Nat,
       txId : Nat64,
+      timestampNanos : ?Nat,
     ) : Result.Result<Nat, Text> {
       switch (roundRepo.findById(roundId)) {
         case null return #err("no_active_round");
         case (?round) {
+          // Prefer the ledger transaction time; fall back to processing time.
+          let depositTime : Int = switch (timestampNanos) {
+            case (?ns) ns;
+            case null TimeUtil.now();
+          };
           let entry = AddressEntry.newAddressEntry(
             roundId,
             accountHex,
             amount,
-            TimeUtil.now(),
+            depositTime,
             txId,
           );
           addressEntryRepo.save(entry);
@@ -123,6 +129,7 @@ module {
                   transfer.amountE8s,
                   roundId,
                   transfer.txId,
+                  transfer.timestampNanos,
                 )
               ) {
                 case (#ok(_)) {

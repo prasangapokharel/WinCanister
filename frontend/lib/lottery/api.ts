@@ -1,5 +1,12 @@
 import { getLotteryActor } from "./actor"
-import { optPrincipal, unwrapOpt, unwrapResult } from "./format"
+import {
+  formatE8sToIcp,
+  nsToMs,
+  optPrincipal,
+  shortenPrincipal,
+  unwrapOpt,
+  unwrapResult,
+} from "./format"
 import type {
   DepositFeedItem,
   HealthResponse,
@@ -7,6 +14,7 @@ import type {
   PayoutEntry,
   PublicCurrentRound,
   PublicStatistics,
+  RecentEntry,
   RoundResult,
   WinnerHistoryEntry,
 } from "./types"
@@ -151,18 +159,28 @@ export async function fetchUnclaimedIncomingTotal(): Promise<bigint> {
   return unwrapResult<bigint>(await actor.getUnclaimedIncomingTotal())
 }
 
-export function buildDepositFeedItem(
-  previousParticipants: bigint,
-  current: PublicCurrentRound
-): DepositFeedItem | null {
-  if (current.participants <= previousParticipants) {
-    return null
-  }
-  const delta = current.participants - previousParticipants
-  return {
-    id: `${current.roundId.toString()}-${current.participants.toString()}-${Date.now()}`,
-    label: `${delta.toString()} new ${delta === BigInt(1) ? "entry" : "entries"}`,
-    amountIcp: `${delta.toString()} ICP min.`,
-    timestamp: Date.now(),
-  }
+type RawRecentEntry = {
+  accountHex: string
+  amountE8s: bigint
+  timestampNanos: bigint
+}
+
+export async function fetchRecentEntries(): Promise<RecentEntry[]> {
+  const actor = await getLotteryActor()
+  const raw = unwrapResult<RawRecentEntry[]>(await actor.getRecentEntries())
+  return raw.map((entry) => ({
+    accountHex: entry.accountHex,
+    amountE8s: entry.amountE8s,
+    timestampNanos: entry.timestampNanos,
+  }))
+}
+
+/** Build the activity feed from real on-chain entries (ledger-accurate times). */
+export function buildDepositFeed(entries: RecentEntry[]): DepositFeedItem[] {
+  return entries.map((entry) => ({
+    id: `${entry.accountHex}-${entry.timestampNanos.toString()}`,
+    label: `Entry from ${shortenPrincipal(entry.accountHex, 6)}`,
+    amountIcp: `${formatE8sToIcp(entry.amountE8s)} ICP`,
+    timestamp: nsToMs(entry.timestampNanos),
+  }))
 }

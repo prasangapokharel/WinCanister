@@ -1,5 +1,6 @@
 import Principal "mo:core/Principal";
 import Nat "mo:core/Nat";
+import Int "mo:core/Int";
 import Text "mo:core/Text";
 import Array "mo:core/Array";
 import RoundRepository "../repositories/RoundRepository";
@@ -17,6 +18,7 @@ import RoundResultResponse "../dto/RoundResultResponse";
 import PayoutDetailsResponse "../dto/PayoutDetailsResponse";
 import PublicStatisticsResponse "../dto/PublicStatisticsResponse";
 import WinnerHistoryResponse "../dto/WinnerHistoryResponse";
+import RecentEntryResponse "../dto/RecentEntryResponse";
 import TimeUtil "../utils/TimeUtil";
 
 module {
@@ -34,6 +36,32 @@ module {
         case null null;
         case (?round) ?PublicCurrentRoundResponse.fromRound(round);
       };
+    };
+
+    // Address-entry deposits for a round, newest first, capped at `limit`.
+    // Timestamps are ledger time when available, so the UI can show real ages.
+    public func getRecentEntries(roundId : Nat, limit : Nat) : [RecentEntryResponse.RecentEntryResponse] {
+      let entries = addressEntryRepo.getEntriesByRound(roundId);
+      let sorted = Array.sort(
+        entries,
+        func(a, b) { Int.compare(b.timestamp, a.timestamp) },
+      );
+      let count = if (sorted.size() < limit) { sorted.size() } else { limit };
+      Array.tabulate<RecentEntryResponse.RecentEntryResponse>(
+        count,
+        func(i) {
+          let entry = sorted[i];
+          {
+            accountHex = entry.accountHex;
+            amountE8s = entry.amount;
+            timestampNanos = entry.timestamp;
+          };
+        },
+      );
+    };
+
+    public func getRecentEntriesCurrent(limit : Nat) : [RecentEntryResponse.RecentEntryResponse] {
+      getRecentEntries(roundRepo.getCurrentRoundId(), limit);
     };
 
     public func getRoundResult(roundId : Nat) : ?RoundResultResponse.RoundResultResponse {

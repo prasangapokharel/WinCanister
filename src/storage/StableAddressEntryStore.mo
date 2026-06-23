@@ -69,4 +69,14 @@ module {
     };
     results;
   };
+
+  public func getEntriesByRound(store : Store, roundId : Nat) : [AddressEntry.AddressEntry] {
+    var results : [AddressEntry.AddressEntry] = [];
+    for (((id, _), entry) in Map.entries(store.addressEntries)) {
+      if (id == roundId) {
+        results := Array.concat(results, [entry]);
+      };
+    };
+    results;
+  };
 };

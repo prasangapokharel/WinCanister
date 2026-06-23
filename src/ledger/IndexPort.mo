@@ -9,6 +9,8 @@ module {
     txId : Nat64;
     fromAccountHex : Text;
     amountE8s : Nat;
+    // Ledger-supplied transaction time (created_at_time), in nanoseconds, when present.
+    timestampNanos : ?Nat;
   };
 
   public type Port = {

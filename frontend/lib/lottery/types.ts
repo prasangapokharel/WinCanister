@@ -70,10 +70,17 @@ export interface HealthResponse {
   version: string
 }
 
+export interface RecentEntry {
+  accountHex: string
+  amountE8s: bigint
+  timestampNanos: bigint
+}
+
 export interface DepositFeedItem {
   id: string
   label: string
   amountIcp: string
+  // Real deposit time in ms (derived from the ledger timestamp), for "X ago".
   timestamp: number
 }
 

@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 
 import {
-  buildDepositFeedItem,
+  buildDepositFeed,
   fetchCurrentRound,
   fetchHealth,
   fetchPayouts,
+  fetchRecentEntries,
   fetchRoundHistory,
   fetchRoundResult,
   fetchStatistics,
@@ -20,7 +21,6 @@ import {
 import { SITE } from "@/lib/site"
 import type {
   DashboardData,
-  DepositFeedItem,
   PayoutDetails,
   PublicCurrentRound,
   RoundResult,
@@ -43,8 +43,6 @@ const EMPTY: DashboardData = {
 export function useLotteryDashboard() {
   const [data, setData] = useState<DashboardData>(EMPTY)
   const [tick, setTick] = useState(0)
-  const participantsRef = useRef<bigint>(BigInt(0))
-  const feedRef = useRef<DepositFeedItem[]>([])
 
   const refresh = useCallback(async () => {
     try {
@@ -54,24 +52,17 @@ export function useLotteryDashboard() {
         roundHistory,
         winnerHistory,
         health,
+        recentEntries,
       ] = await Promise.all([
         fetchCurrentRound(),
         fetchStatistics(),
         fetchRoundHistory(),
         fetchWinnerHistory(),
         fetchHealth(),
+        fetchRecentEntries(),
       ])
 
-      if (currentRound) {
-        const feedItem = buildDepositFeedItem(
-          participantsRef.current,
-          currentRound
-        )
-        if (feedItem) {
-          feedRef.current = [feedItem, ...feedRef.current].slice(0, 30)
-        }
-        participantsRef.current = currentRound.participants
-      }
+      const depositFeed = buildDepositFeed(recentEntries)
 
       const historyIds = roundHistory.slice(-12).reverse()
       const roundResults = new Map<string, RoundResult>()
@@ -115,7 +106,7 @@ export function useLotteryDashboard() {
         payoutsByRound,
         winnerHistory,
         health,
-        depositFeed: [...feedRef.current],
+        depositFeed,
         lastUpdated: Date.now(),
         error: null,
         loading: false,
