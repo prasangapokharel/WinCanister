@@ -27,6 +27,7 @@ import RoundResultResponse "dto/RoundResultResponse";
 import PayoutDetailsResponse "dto/PayoutDetailsResponse";
 import PublicStatisticsResponse "dto/PublicStatisticsResponse";
 import WinnerHistoryResponse "dto/WinnerHistoryResponse";
+import RecentEntryResponse "dto/RecentEntryResponse";
 import Statistics "models/Statistics";
 import Config "models/Config";
 import Logger "utils/Logger";
@@ -71,39 +72,39 @@ actor Lottery {
     );
   };
 
-  func ensureInitialized<system>() {
+  // One-time, idempotent state setup (creates the initial round). Safe to call on
+  // every deployment and from every entrypoint. Timer arming is deliberately NOT
+  // done here — see the actor-body timer bindings below.
+  func ensureInitialized() {
     if (not isInitialized) {
       buildLotteryService().initialize();
-      scheduleRoundCheck<system>();
-      scheduleDepositWatch<system>();
       isInitialized := true;
       Logger.info("lottery initialized");
     };
   };
 
-  func scheduleDepositWatch<system>() {
-    ignore Timer.recurringTimer<system>(
-      #seconds (30),
-      func() : async () {
-        let controller = LotteryController.Controller(buildLotteryService());
-        ignore await controller.processIncomingDeposits();
-        let total = await controller.getUnclaimedIncomingTotal();
-        unclaimedIncomingTotalE8s := total;
-      },
-    );
+  func depositTick() : async () {
+    ensureInitialized();
+    let controller = LotteryController.Controller(buildLotteryService());
+    ignore await controller.processIncomingDeposits();
+    let total = await controller.getUnclaimedIncomingTotal();
+    unclaimedIncomingTotalE8s := total;
   };
 
-  func scheduleRoundCheck<system>() {
-    ignore Timer.recurringTimer<system>(
-      #seconds (60),
-      func() : async () {
-        ignore await RoundController.Controller(buildLotteryService()).processExpiredRound();
-      },
-    );
+  func roundTick() : async () {
+    ensureInitialized();
+    ignore await RoundController.Controller(buildLotteryService()).processExpiredRound();
   };
+
+  // Armed in the actor body so they are re-created on every install AND every
+  // upgrade. Timers never survive an upgrade, and `isInitialized` is stable, so
+  // arming them inside `ensureInitialized` would leave the canister with no
+  // active timers after the first upgrade.
+  transient let _depositTimer = Timer.recurringTimer<system>(#seconds 30, depositTick);
+  transient let _roundTimer = Timer.recurringTimer<system>(#seconds 60, roundTick);
 
   public shared (msg) func joinRound(amount : Nat) : async Result.Result<Nat, Text> {
-    ensureInitialized<system>();
+    ensureInitialized();
     await LotteryController.Controller(buildLotteryService()).joinRound(msg.caller, amount);
   };
 
@@ -113,6 +114,10 @@ actor Lottery {
 
   public query func getRoundResult(roundId : Nat) : async ?RoundResultResponse.RoundResultResponse {
     buildLotteryService().getTransparencyService().getRoundResult(roundId);
+  };
+
+  public query func getRecentEntries() : async [RecentEntryResponse.RecentEntryResponse] {
+    buildLotteryService().getTransparencyService().getRecentEntriesCurrent(30);
   };
 
   public query func getPayouts(roundId : Nat) : async ?PayoutDetailsResponse.PayoutDetailsResponse {
@@ -148,17 +153,17 @@ actor Lottery {
   };
 
   public shared (msg) func updateTreasury(treasuryPrincipal : Principal) : async Result.Result<Text, Text> {
-    ensureInitialized<system>();
+    ensureInitialized();
     LotteryController.Controller(buildLotteryService()).updateTreasury(msg.caller, treasuryPrincipal);
   };
 
   public shared (_msg) func processIncomingDeposits() : async Nat {
-    ensureInitialized<system>();
+    ensureInitialized();
     await LotteryController.Controller(buildLotteryService()).processIncomingDeposits();
   };
 
   public shared (_msg) func syncDepositWatch() : async Nat {
-    ensureInitialized<system>();
+    ensureInitialized();
     let controller = LotteryController.Controller(buildLotteryService());
     ignore await controller.processIncomingDeposits();
     let total = await controller.getUnclaimedIncomingTotal();
@@ -171,7 +176,7 @@ actor Lottery {
     amount : Nat,
     voidDepositTxId : ?Nat64,
   ) : async Result.Result<Nat, Text> {
-    ensureInitialized<system>();
+    ensureInitialized();
     await LotteryController.Controller(buildLotteryService()).adminRefundIcp(
       msg.caller,
       recipient,
@@ -181,7 +186,7 @@ actor Lottery {
   };
 
   public shared func getCanisterIcpBalance() : async Nat {
-    ensureInitialized<system>();
+    ensureInitialized();
     await LotteryController.Controller(buildLotteryService()).getCanisterIcpBalance();
   };
 
@@ -194,11 +199,11 @@ actor Lottery {
   };
 
   public shared (_msg) func processExpiredRound() : async Result.Result<Text, Text> {
-    ensureInitialized<system>();
+    ensureInitialized();
     await RoundController.Controller(buildLotteryService()).processExpiredRound();
   };
 
   public shared (_msg) func initialize() : async () {
-    ensureInitialized<system>();
+    ensureInitialized();
   };
 };

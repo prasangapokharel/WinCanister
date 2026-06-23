@@ -20,5 +20,9 @@ module {
     public func getAccountHexesByRound(roundId : Nat) : [Text] {
       StableAddressEntryStore.getAccountHexesByRound(store, roundId);
     };
+
+    public func getEntriesByRound(roundId : Nat) : [AddressEntry.AddressEntry] {
+      StableAddressEntryStore.getEntriesByRound(store, roundId);
+    };
   };
 };

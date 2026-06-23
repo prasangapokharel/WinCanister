@@ -59,6 +59,10 @@ export interface LotteryService {
   getPayouts: (roundId: bigint) => Promise<PayoutDetails | null | [PayoutDetails | null]>
   getRoundHistory: () => Promise<bigint[] | [bigint[]]>
   getRoundResult: (roundId: bigint) => Promise<RoundResult | null | [RoundResult | null]>
+  getRecentEntries: () => Promise<
+    | Array<{ accountHex: string; amountE8s: bigint; timestampNanos: bigint }>
+    | [Array<{ accountHex: string; amountE8s: bigint; timestampNanos: bigint }>]
+  >
   getWinnerHistory: () => Promise<WinnerHistoryEntry[] | [WinnerHistoryEntry[]]>
   health: () => Promise<HealthResponse | [HealthResponse]>
   claimDeposit: () => Promise<ResultNat | [ResultNat]>

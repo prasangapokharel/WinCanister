@@ -146,22 +146,32 @@ module {
             case (?err) return #err(err);
             case null {};
           };
-          let treasuryAmount = round.treasuryFee + round.unclaimedTreasury;
+          let grossTreasury = round.treasuryFee + round.unclaimedTreasury;
+          // The ledger charges LEDGER_TRANSFER_FEE on top of the amount, so the
+          // recipient bears the fee: send (gross - fee). If the gross can't cover
+          // the fee there is nothing meaningful to send; mark transferred to advance.
+          if (grossTreasury <= AppConfig.LEDGER_TRANSFER_FEE) {
+            let advanced = { round with treasuryTransferred = true };
+            roundRepo.save(advanced);
+            Logger.event("round_treasury_skipped", Nat.toText(grossTreasury));
+            return #ok("treasury_skipped");
+          };
+          let netTreasury = grossTreasury - AppConfig.LEDGER_TRANSFER_FEE;
           let treasuryPrincipal = configService.getTreasuryPrincipal();
-          switch (await treasuryService.transferTreasury(ledger, treasuryPrincipal, treasuryAmount)) {
+          switch (await treasuryService.transferTreasury(ledger, treasuryPrincipal, netTreasury)) {
             case (#err(msg)) return #err(msg);
             case (#ok(blockIndex)) {
               transparencyService.recordTreasuryPayout(
                 round.id,
                 treasuryPrincipal,
-                treasuryAmount,
+                netTreasury,
                 blockIndex,
               );
               let updated = {
                 round with treasuryTransferred = true;
               };
               roundRepo.save(updated);
-              Logger.event("round_treasury_transferred", Nat.toText(treasuryAmount));
+              Logger.event("round_treasury_transferred", Nat.toText(netTreasury));
               #ok("treasury_transferred");
             };
           };
@@ -186,31 +196,39 @@ module {
 
           let addressHexes = addressEntryRepo.getAccountHexesByRound(round.id);
           for (winner in winners.vals()) {
-            if (winner.paid) {
-              return #err("duplicate_payout");
-            };
-            switch (PaymentValidator.validatePayoutAmount(winner.prizeAmount)) {
-              case (?err) return #err(err);
-              case null {};
-            };
-            let payoutHex = AccountParticipant.payoutAccountHex(winner.participant, addressHexes);
-            switch (await ledger.transferToAccountHex(payoutHex, winner.prizeAmount, null)) {
-              case (#err(msg)) return #err(msg);
-              case (#ok(blockIndex)) {
-                transparencyService.recordWinnerPayout(
-                  round.id,
-                  winner.position,
-                  winner.participant,
-                  winner.prizeAmount,
-                  blockIndex,
-                );
-                let paidWinner = {
-                  winner with
-                  paid = true;
-                  blockIndex = ?blockIndex;
+            // Skip winners already paid so a partial distribution can resume cleanly.
+            if (not winner.paid) {
+              switch (PaymentValidator.validatePayoutAmount(winner.prizeAmount)) {
+                case (?err) return #err(err);
+                case null {};
+              };
+              // Recipient bears the ledger fee: send (prize - fee). A prize that
+              // can't cover the fee is unpayable; mark it settled and skip.
+              if (winner.prizeAmount <= AppConfig.LEDGER_TRANSFER_FEE) {
+                let settled = { winner with paid = true; blockIndex = null };
+                winnerRepo.save(settled);
+              } else {
+                let netAmount = winner.prizeAmount - AppConfig.LEDGER_TRANSFER_FEE;
+                let payoutHex = AccountParticipant.payoutAccountHex(winner.participant, addressHexes);
+                switch (await ledger.transferToAccountHex(payoutHex, netAmount, null)) {
+                  case (#err(msg)) return #err(msg);
+                  case (#ok(blockIndex)) {
+                    transparencyService.recordWinnerPayout(
+                      round.id,
+                      winner.position,
+                      winner.participant,
+                      netAmount,
+                      blockIndex,
+                    );
+                    let paidWinner = {
+                      winner with
+                      paid = true;
+                      blockIndex = ?blockIndex;
+                    };
+                    winnerRepo.save(paidWinner);
+                    totalPaid += winner.prizeAmount;
+                  };
                 };
-                winnerRepo.save(paidWinner);
-                totalPaid += winner.prizeAmount;
               };
             };
           };
@@ -253,40 +271,96 @@ module {
       };
     };
 
+    // Idempotent and resumable: each step is gated on the round's current status
+    // and the round is re-read between steps, so a round left stuck in any
+    // intermediate state (e.g. #DrawWinners after a failed payout) is picked up
+    // and driven to completion on the next call instead of deadlocking.
     public func processExpiredRound() : async Result.Result<Text, Text> {
-      switch (await closeRoundIfExpired()) {
-        case (#err(_)) return #err("round_not_expired");
-        case (#ok(_)) {};
-      };
-      switch (await drawWinners()) {
-        case (#err(msg)) return #err(msg);
-        case (#ok(_)) {};
-      };
-      let current = switch (getCurrentRound()) {
+      // Step 1 — close the round once it has expired.
+      switch (getCurrentRound()) {
         case null return #err("no_active_round");
-        case (?r) r;
-      };
-      if (current.entryCount == 0) {
-        switch (archiveRound()) {
-          case (#err(msg)) return #err(msg);
-          case (#ok(_)) {};
+        case (?round) {
+          if (Round.isAcceptingEntries(round)) {
+            if (not RoundValidator.validateRoundExpired(round)) {
+              return #err("round_not_expired");
+            };
+            switch (await closeRoundIfExpired()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+          };
         };
-        ignore createNextRound();
-        return #ok("empty_round_archived");
       };
-      switch (await transferTreasuryFees()) {
-        case (#err(msg)) return #err(msg);
-        case (#ok(_)) {};
+
+      // Step 2 — draw winners.
+      switch (getCurrentRound()) {
+        case null return #err("no_active_round");
+        case (?round) {
+          if (round.status == #RoundClose) {
+            switch (await drawWinners()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+          };
+        };
       };
-      switch (await distributePrizes()) {
-        case (#err(msg)) return #err(msg);
-        case (#ok(_)) {};
+
+      // Step 3 — empty round: nothing to pay out, archive and roll over.
+      switch (getCurrentRound()) {
+        case null return #err("no_active_round");
+        case (?round) {
+          if (round.entryCount == 0 and (round.status == #RoundClose or round.status == #DrawWinners)) {
+            switch (archiveRound()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+            ignore createNextRound();
+            return #ok("empty_round_archived");
+          };
+        };
       };
-      switch (archiveRound()) {
-        case (#err(msg)) return #err(msg);
-        case (#ok(_)) {};
+
+      // Step 4 — transfer treasury fees (only if not already done).
+      switch (getCurrentRound()) {
+        case null return #err("no_active_round");
+        case (?round) {
+          if (round.status == #DrawWinners and not round.treasuryTransferred) {
+            switch (await transferTreasuryFees()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+          };
+        };
       };
-      ignore createNextRound();
+
+      // Step 5 — distribute prizes.
+      switch (getCurrentRound()) {
+        case null return #err("no_active_round");
+        case (?round) {
+          if (round.status == #DrawWinners) {
+            switch (await distributePrizes()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+          };
+        };
+      };
+
+      // Step 6 — archive and open the next round.
+      switch (getCurrentRound()) {
+        case null return #err("no_active_round");
+        case (?round) {
+          if (round.status == #DistributePrizes) {
+            switch (archiveRound()) {
+              case (#err(msg)) return #err(msg);
+              case (#ok(_)) {};
+            };
+            ignore createNextRound();
+            return #ok("round_processed");
+          };
+        };
+      };
+
       #ok("round_processed");
     };
   };

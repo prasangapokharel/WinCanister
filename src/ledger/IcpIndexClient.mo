@@ -27,10 +27,15 @@ module {
             switch (item.transaction.operation) {
               case (#Transfer(details)) {
                 if (details.to == accountHex) {
+                  let timestampNanos = switch (item.transaction.created_at_time) {
+                    case (?ts) ?Nat64.toNat(ts.timestamp_nanos);
+                    case null null;
+                  };
                   transfers := Array.concat(transfers, [{
                     txId = item.id;
                     fromAccountHex = details.from;
                     amountE8s = Nat64.toNat(details.amount.e8s);
+                    timestampNanos = timestampNanos;
                   }]);
                 };
               };
