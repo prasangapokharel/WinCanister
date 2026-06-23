@@ -20,7 +20,7 @@ export function BrandAvatar({ size = "md", className }: BrandAvatarProps) {
   return (
     <div
       className={cn(
-        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full border border-border/60 bg-gradient-to-br from-primary/15 via-card to-card p-1.5 shadow-sm ring-1 ring-primary/10",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-card",
         box,
         className
       )}
