@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import {
   buildDepositFeed,
@@ -13,11 +13,7 @@ import {
   fetchStatistics,
   fetchWinnerHistory,
 } from "@/lib/lottery/api"
-import {
-  POLL_DEPOSITS_MS,
-  POLL_POOL_MS,
-  TIMER_TICK_MS,
-} from "@/lib/lottery/config"
+import { POLL_POOL_MS, TIMER_TICK_MS } from "@/lib/lottery/config"
 import { SITE } from "@/lib/site"
 import type {
   DashboardData,
@@ -43,8 +39,15 @@ const EMPTY: DashboardData = {
 export function useLotteryDashboard() {
   const [data, setData] = useState<DashboardData>(EMPTY)
   const [tick, setTick] = useState(0)
+  const inFlight = useRef(false)
 
   const refresh = useCallback(async () => {
+    // Skip if a previous poll is still running (avoids stacking requests on
+    // slow networks and duplicate canister queries).
+    if (inFlight.current) {
+      return
+    }
+    inFlight.current = true
     try {
       const [
         currentRound,
@@ -121,22 +124,18 @@ export function useLotteryDashboard() {
         loading: false,
         lastUpdated: Date.now(),
       }))
+    } finally {
+      inFlight.current = false
     }
   }, [])
 
   useEffect(() => {
     void refresh()
-    const poolTimer = window.setInterval(() => {
+    const timer = window.setInterval(() => {
       void refresh()
     }, POLL_POOL_MS)
-    const depositTimer = window.setInterval(() => {
-      void refresh()
-    }, POLL_DEPOSITS_MS)
 
-    return () => {
-      window.clearInterval(poolTimer)
-      window.clearInterval(depositTimer)
-    }
+    return () => window.clearInterval(timer)
   }, [refresh])
 
   useEffect(() => {

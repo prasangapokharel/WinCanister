@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { IconBox } from "@/components/home/IconBox"
-import { POLL_DEPOSITS_MS } from "@/lib/lottery/config"
+import { POLL_POOL_MS } from "@/lib/lottery/config"
 import { timeAgo } from "@/lib/lottery/format"
 import type { DepositFeedItem } from "@/lib/lottery/types"
 
@@ -23,7 +23,7 @@ export function LiveDepositsFeed({ items }: LiveDepositsFeedProps) {
             <CardTitle className="text-lg">Live activity</CardTitle>
           </div>
           <Badge variant="secondary" className="shrink-0 rounded-full text-[10px] font-normal">
-            Polled every {POLL_DEPOSITS_MS / 1000}s
+            Polled every {POLL_POOL_MS / 1000}s
           </Badge>
         </div>
       </CardHeader>

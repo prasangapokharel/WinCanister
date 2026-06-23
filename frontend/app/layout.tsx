@@ -1,12 +1,15 @@
 import { Geist_Mono, Inter } from "next/font/google"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { SITE } from "@/lib/site"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const fontSans = Inter({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
@@ -14,8 +17,44 @@ const fontMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: SITE.name,
+  metadataBase: new URL(SITE.liveUrl),
+  title: {
+    default: `${SITE.name} — ${SITE.tagline}`,
+    template: `%s · ${SITE.name}`,
+  },
   description: SITE.description,
+  applicationName: SITE.name,
+  keywords: [
+    "WinCanister",
+    "ICP",
+    "Internet Computer",
+    "decentralized lottery",
+    "on-chain lottery",
+    "ICP lottery",
+  ],
+  authors: [{ name: "Prasanga Pokharel", url: SITE.repoUrl }],
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE.liveUrl,
+    siteName: SITE.name,
+    title: `${SITE.name} — ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SITE.name} — ${SITE.tagline}`,
+    description: SITE.description,
+  },
+  robots: { index: true, follow: true },
+  icons: { icon: "/favicon.ico" },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
 }
 
 export default function RootLayout({
@@ -27,7 +66,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
+      className={cn("antialiased font-sans", fontSans.variable, fontMono.variable)}
     >
       <body>
         <ThemeProvider>{children}</ThemeProvider>

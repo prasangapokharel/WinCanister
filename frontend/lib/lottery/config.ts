@@ -13,6 +13,6 @@ export const NETWORK_LABEL =
 export const IS_LOCAL =
   process.env.NEXT_PUBLIC_DFX_NETWORK === "local"
 
+// Single dashboard poll interval (pool, participants, deposits, history).
 export const POLL_POOL_MS = 5_000
-export const POLL_DEPOSITS_MS = 5_000
 export const TIMER_TICK_MS = 50
