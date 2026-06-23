@@ -37,6 +37,7 @@ export function DashboardHeader({ round }: DashboardHeaderProps) {
           Round #{roundId}
         </Badge>
         <Badge variant="outline" className={badgeClass}>
+          <span className={`mr-1.5 inline-block size-2 rounded-full ${isOpen ? "bg-emerald-500" : "bg-muted-foreground/50"}`} />
           {isOpen ? "online" : "offline"}
         </Badge>
         <div className="flex flex-col items-center gap-1">
