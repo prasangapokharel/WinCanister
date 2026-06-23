@@ -46,6 +46,22 @@ export function unwrapOpt<T>(result: unknown): T | null {
   return result as T
 }
 
+/**
+ * Unwrap a Candid `vec` (array) return. Agent v3 returns the array directly;
+ * older agents wrap the whole response in a one-tuple (`[array]`). Crucially,
+ * a vec with exactly one element (e.g. `[1n]`) must NOT be treated as a wrapper
+ * — that is the bug `unwrapResult` would introduce here.
+ */
+export function unwrapVec<T>(result: unknown): T[] {
+  if (!Array.isArray(result)) {
+    return []
+  }
+  if (result.length === 1 && Array.isArray(result[0])) {
+    return result[0] as T[]
+  }
+  return result as T[]
+}
+
 export function optText(value: unknown): string | null {
   if (value === null || value === undefined) {
     return null

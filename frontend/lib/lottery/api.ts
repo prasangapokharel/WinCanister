@@ -6,6 +6,7 @@ import {
   shortenPrincipal,
   unwrapOpt,
   unwrapResult,
+  unwrapVec,
 } from "./format"
 import type {
   DepositFeedItem,
@@ -95,7 +96,7 @@ export async function fetchStatistics(): Promise<PublicStatistics> {
 
 export async function fetchRoundHistory(): Promise<bigint[]> {
   const actor = await getLotteryActor()
-  return unwrapResult<bigint[]>(await actor.getRoundHistory())
+  return unwrapVec<bigint>(await actor.getRoundHistory())
 }
 
 export async function fetchRoundResult(roundId: bigint): Promise<RoundResult | null> {
@@ -133,7 +134,7 @@ export async function fetchPayouts(roundId: bigint): Promise<PayoutDetails | nul
 
 export async function fetchWinnerHistory(): Promise<WinnerHistoryEntry[]> {
   const actor = await getLotteryActor()
-  const history = unwrapResult<RawWinnerHistoryEntry[]>(
+  const history = unwrapVec<RawWinnerHistoryEntry>(
     await actor.getWinnerHistory()
   )
   return history.map((entry) => ({
@@ -167,7 +168,7 @@ type RawRecentEntry = {
 
 export async function fetchRecentEntries(): Promise<RecentEntry[]> {
   const actor = await getLotteryActor()
-  const raw = unwrapResult<RawRecentEntry[]>(await actor.getRecentEntries())
+  const raw = unwrapVec<RawRecentEntry>(await actor.getRecentEntries())
   return raw.map((entry) => ({
     accountHex: entry.accountHex,
     amountE8s: entry.amountE8s,
