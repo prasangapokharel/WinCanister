@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/home/DashboardHeader"
 import { DepositAddress } from "@/components/home/DepositAddress"
 import { LiveDepositsFeed } from "@/components/home/LiveDepositsFeed"
 import { RoundHistory } from "@/components/home/RoundHistory"
+import { HowItWorks } from "@/components/home/HowItWorks"
 import { SiteFooter } from "@/components/home/SiteFooter"
 import { StatsGrid } from "@/components/home/StatsGrid"
 import { WinnersSection } from "@/components/home/WinnersSection"
@@ -77,6 +78,8 @@ export function HomeDashboard() {
           progress={countdown.progress}
           done={countdown.done}
         />
+
+        <HowItWorks />
 
         <div className="grid items-stretch gap-5 lg:grid-cols-2">
           <DepositAddress />
