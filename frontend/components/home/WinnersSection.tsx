@@ -124,6 +124,7 @@ export function WinnersSection({
                   <CopyableValue
                     label="Ledger TX"
                     value={winner.entry.txId.toString()}
+                    href={`https://dashboard.internetcomputer.org/transaction/${winner.entry.txId.toString()}`}
                   />
                 </>
               ) : (

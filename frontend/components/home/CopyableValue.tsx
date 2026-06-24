@@ -3,7 +3,7 @@
 import { useState } from "react"
 
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Copy01Icon, CopyCheckIcon } from "@hugeicons/core-free-icons"
+import { Copy01Icon, CopyCheckIcon, LinkIcon } from "@hugeicons/core-free-icons"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils"
 interface CopyableValueProps {
   label: string
   value: string
+  href?: string
   mono?: boolean
   className?: string
 }
@@ -25,6 +26,7 @@ interface CopyableValueProps {
 export function CopyableValue({
   label,
   value,
+  href,
   mono = true,
   className,
 }: CopyableValueProps) {
@@ -43,11 +45,26 @@ export function CopyableValue({
           {label}
         </p>
         <div className="flex gap-2">
-          <Input
-            readOnly
-            value={value}
-            className={cn("bg-muted/40", mono && "font-mono text-xs")}
-          />
+          {href ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "flex h-9 items-center gap-1.5 rounded-md border bg-muted/40 px-3 text-sm transition-colors hover:bg-muted/60",
+                mono && "font-mono text-xs"
+              )}
+            >
+              <HugeiconsIcon icon={LinkIcon} strokeWidth={2} className="size-3.5 shrink-0 text-muted-foreground" />
+              {value}
+            </a>
+          ) : (
+            <Input
+              readOnly
+              value={value}
+              className={cn("bg-muted/40", mono && "font-mono text-xs")}
+            />
+          )}
           <Tooltip open={copied}>
             <TooltipTrigger asChild>
               <Button type="button" variant="outline" onClick={handleCopy} className="gap-1.5">
